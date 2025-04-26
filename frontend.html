@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Clients</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Liste des Clients</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#clientModal">+ Ajouter</button>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Âge</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="clientsTableBody">
+            <!-- Les clients seront insérés ici dynamiquement -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal-->
+<div class="modal fade" id="clientModal" tabindex="-1" aria-labelledby="clientModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="clientForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="clientModalLabel">Ajouter un Client</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-3">
+                <label for="clientId" class="form-label">ID</label>
+                <input type="number" class="form-control" id="clientId" required>
+            </div>
+            <div class="mb-3">
+                <label for="clientNom" class="form-label">Nom</label>
+                <input type="text" class="form-control" id="clientNom" required>
+            </div>
+            <div class="mb-3">
+                <label for="clientAge" class="form-label">Âge</label>
+                <input type="number" class="form-control" id="clientAge" required>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Sauvegarder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+//charger les clients
+function chargerClients() {
+    axios.get('http://localhost:3000/clients')
+        .then(response => {
+            const clients = response.data;
+            const tableBody = document.getElementById('clientsTableBody');
+            tableBody.innerHTML = '';
+            clients.forEach(client => {
+                const row = `<tr>
+                    <td>${client.id}</td>
+                    <td>${client.nom}</td>
+                    <td>${client.age}</td>
+                    <td>
+                        <img src="img2.png" alt="Modifier" style="width:24px; height:24px; cursor:pointer; margin-right:10px;" onclick="modifierClient(${client.id})">
+                        <img src="img1.ico" alt="Supprimer" style="width:24px; height:24px; cursor:pointer;" onclick="supprimerClient(${client.id})">
+                        
+                    </td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        })
+        .catch(error => {
+            console.error('Erreur chargement clients:', error);
+        });
+}
+
+// Ajouter un nouveau client
+document.getElementById('clientForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('clientId').value;
+    const nom = document.getElementById('clientNom').value;
+    const age = document.getElementById('clientAge').value;
+
+    axios.post('http://localhost:3000/clients', {
+        id: Number(id),
+        nom: nom,
+        age: Number(age)
+    })
+    .then(response => {
+        // Fermer la modal
+        const clientModal = bootstrap.Modal.getInstance(document.getElementById('clientModal'));
+        clientModal.hide();
+        // Réinitialiser le formulaire
+        document.getElementById('clientForm').reset();
+        // Recharger la liste
+        chargerClients();
+    })
+    .catch(error => {
+        console.error('Erreur ajout client:', error.response.data);
+        alert('Erreur: ' + error.response.data.message);
+    });
+});
+
+// Fonction pour supprimer un client
+function supprimerClient(id) {
+    if (confirm('Voulez-vous vraiment supprimer ce client ?')) {
+        axios.delete(`http://localhost:3000/clients/${id}`)
+            .then(response => {
+                chargerClients(); // Recharger après suppression
+            })
+            .catch(error => {
+                console.error('Erreur suppression client:', error);
+            });
+    }
+}
+
+// Fonction pour modifier un client
+function modifierClient(id) {
+    const nouveauNom = prompt('Entrez le nouveau nom:');
+    const nouvelAge = prompt('Entrez le nouvel âge:');
+
+    if (nouveauNom && nouvelAge) {
+        axios.put(`http://localhost:3000/clients/${id}`, {
+            nom: nouveauNom,
+            age: Number(nouvelAge)
+        })
+        .then(response => {
+            chargerClients(); // Recharger après modification
+        })
+        .catch(error => {
+            console.error('Erreur modification client:', error);
+        });
+    }
+}
+
+// Charger les clients au chargement de la page
+document.addEventListener('DOMContentLoaded', chargerClients);
+</script>
+
+</body>
+</html>
